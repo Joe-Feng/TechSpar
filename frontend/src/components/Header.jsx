@@ -20,11 +20,7 @@ const styles = {
     width: 32,
     height: 32,
     borderRadius: 8,
-    background: "linear-gradient(135deg, var(--accent), var(--accent-light))",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 18,
+    objectFit: "contain",
   },
   title: {
     fontSize: 18,
@@ -79,7 +75,7 @@ export default function Header() {
   return (
     <header style={styles.header}>
       <div style={styles.logo} onClick={() => navigate("/")}>
-        <div style={styles.logoIcon}>T</div>
+        <img src="/logo.png" alt="TechSpar" style={styles.logoIcon} />
         <span style={styles.title}>TechSpar</span>
       </div>
       <nav style={styles.nav}>

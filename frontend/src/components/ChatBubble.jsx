@@ -1,65 +1,56 @@
 import ReactMarkdown from "react-markdown";
 
 const styles = {
-  wrapper: {
+  aiRow: {
     display: "flex",
-    gap: 12,
-    maxWidth: "85%",
+    flexDirection: "column",
     animation: "fadeIn 0.3s ease",
   },
-  wrapperUser: {
-    alignSelf: "flex-end",
-    flexDirection: "row-reverse",
+  aiDivider: {
+    height: 1,
+    background: "var(--border)",
+    marginBottom: 24,
   },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 14,
-    fontWeight: 600,
-    flexShrink: 0,
-  },
-  avatarAI: {
-    background: "linear-gradient(135deg, var(--accent), var(--accent-light))",
-    color: "#fff",
-  },
-  avatarUser: {
-    background: "var(--bg-hover)",
-    color: "var(--accent-light)",
-    border: "1px solid var(--border)",
-  },
-  bubble: {
-    padding: "12px 16px",
-    borderRadius: "var(--radius)",
-    lineHeight: 1.7,
+  aiContent: {
+    maxWidth: 720,
+    lineHeight: 1.8,
     fontSize: 15,
+    color: "var(--text)",
   },
-  bubbleAI: {
-    background: "var(--bg-card)",
-    border: "1px solid var(--border)",
-    borderTopLeftRadius: 4,
+  userRow: {
+    display: "flex",
+    justifyContent: "flex-end",
+    animation: "fadeIn 0.3s ease",
   },
-  bubbleUser: {
+  userBubble: {
+    maxWidth: "70%",
+    padding: "10px 16px",
+    borderRadius: 18,
+    borderTopRightRadius: 4,
     background: "var(--accent)",
     color: "#fff",
-    borderTopRightRadius: 4,
+    fontSize: 15,
+    lineHeight: 1.7,
     whiteSpace: "pre-wrap",
   },
 };
 
 export default function ChatBubble({ role, content }) {
-  const isUser = role === "user";
+  if (role === "user") {
+    return (
+      <div style={styles.userRow}>
+        <div style={styles.userBubble}>{content}</div>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ ...styles.wrapper, ...(isUser ? styles.wrapperUser : {}) }}>
-      <div style={{ ...styles.avatar, ...(isUser ? styles.avatarUser : styles.avatarAI) }}>
-        {isUser ? "You" : "AI"}
-      </div>
-      <div style={{ ...styles.bubble, ...(isUser ? styles.bubbleUser : styles.bubbleAI) }}>
-        {isUser ? content : <div className="md-content"><ReactMarkdown>{content}</ReactMarkdown></div>}
+    <div style={styles.aiRow}>
+      <div style={styles.aiDivider} />
+      <div style={styles.aiContent}>
+        <div className="md-content">
+          <ReactMarkdown>{content}</ReactMarkdown>
+        </div>
       </div>
     </div>
   );

@@ -98,15 +98,29 @@ EXTRACT_PROMPT = """你是一个面试教练的分析引擎。根据面试对话
         "new_gaps": ["被追问'为什么这样设计'时缺乏推导过程", "对比类问题回答缺乏结构"]
     }},
     "session_summary": "本次 Python 专项训练，基础题表现好，但 GIL 和 GC 机制理解不够深入",
-    "avg_score": 6.5
+    "dimension_scores": {{
+        "technical_depth": 6,
+        "project_articulation": 7,
+        "communication": 5,
+        "problem_solving": 6
+    }},
+    "avg_score": 6.0
 }}
 ```
+
+## dimension_scores 评分说明（仅简历面试模式需要填写，专项训练留空即可）
+- technical_depth (1-10): 技术理解的深度，是真懂还是在背？能否说出 why？
+- project_articulation (1-10): 项目描述能力——设计思路、量化成果、技术权衡是否讲清楚
+- communication (1-10): 表达的清晰度、结构化程度、简洁性
+- problem_solving (1-10): 被追问时的分析推理能力，能否现场推导
+- avg_score = 四个维度的均值，保留一位小数
 
 规则：
 - 只提取本次面试中明确暴露的信息，不要猜测
 - 薄弱点要具体，不要泛泛说"XX不好"
 - 如果候选人对某个之前的薄弱点表现出了进步，在 strong_points 里标注
 - topic_mastery 只需提供 notes（一句话描述掌握情况），score 由算法计算，不需要你判断
+- 专项训练模式下 dimension_scores 可省略，只需给 avg_score
 """
 
 
@@ -466,8 +480,11 @@ def _update_thinking_patterns(profile: dict, patterns: dict):
             tp["gaps"].append(g)
 
 
-def _update_stats(profile: dict, mode: str, topic: str | None, avg_score: float | None, now: str, answer_count: int = 0):
-    """Update session statistics."""
+def _update_stats(
+    profile: dict, mode: str, topic: str | None, avg_score: float | None,
+    now: str, answer_count: int = 0, dimension_scores: dict | None = None,
+):
+    """Update session statistics with per-mode averages."""
     stats = profile.setdefault("stats", {})
     stats["total_sessions"] = stats.get("total_sessions", 0) + 1
     if mode == "resume":
@@ -480,10 +497,24 @@ def _update_stats(profile: dict, mode: str, topic: str | None, avg_score: float 
 
     if avg_score:
         history = stats.setdefault("score_history", [])
-        history.append({"date": now[:10], "mode": mode, "topic": topic, "avg_score": avg_score})
-        recent = [h["avg_score"] for h in history[-20:] if h.get("avg_score")]
-        if recent:
-            stats["avg_score"] = round(sum(recent) / len(recent), 1)
+        entry = {"date": now[:10], "mode": mode, "topic": topic, "avg_score": avg_score}
+        if dimension_scores:
+            entry["dimension_scores"] = dimension_scores
+        history.append(entry)
+
+        # Per-mode rolling averages
+        drill_scores = [h["avg_score"] for h in history if h.get("mode") == "topic_drill" and h.get("avg_score")][-20:]
+        resume_scores = [h["avg_score"] for h in history if h.get("mode") == "resume" and h.get("avg_score")][-10:]
+
+        if drill_scores:
+            stats["drill_avg_score"] = round(sum(drill_scores) / len(drill_scores), 1)
+        if resume_scores:
+            stats["resume_avg_score"] = round(sum(resume_scores) / len(resume_scores), 1)
+
+        # Combined: proportional weighted average
+        all_recent = drill_scores + resume_scores
+        if all_recent:
+            stats["avg_score"] = round(sum(all_recent) / len(all_recent), 1)
 
 
 async def llm_update_profile(
@@ -498,6 +529,7 @@ async def llm_update_profile(
     avg_score: float | None = None,
     answer_count: int = 0,
     session_weight: float = 0.7,
+    dimension_scores: dict | None = None,
 ):
     """Mem0-style profile update: LLM decides ADD/UPDATE/NOOP for each fact."""
     from backend.prompts.interviewer import PROFILE_UPDATE_PROMPT
@@ -558,7 +590,7 @@ async def llm_update_profile(
     _update_mastery(profile, topic, topic_mastery, now, session_weight)
     _update_communication(profile, communication)
     _update_thinking_patterns(profile, thinking_patterns)
-    _update_stats(profile, mode, topic, avg_score, now, answer_count)
+    _update_stats(profile, mode, topic, avg_score, now, answer_count, dimension_scores)
 
     _save_profile(profile)
     _save_insight(mode=mode, topic=topic, summary=session_summary, raw_extraction={
@@ -638,6 +670,7 @@ async def update_profile_after_interview(
         thinking_patterns=extraction.get("thinking_patterns"),
         session_summary=extraction.get("session_summary", ""),
         avg_score=extraction.get("avg_score"),
+        dimension_scores=extraction.get("dimension_scores"),
     )
 
     return extraction

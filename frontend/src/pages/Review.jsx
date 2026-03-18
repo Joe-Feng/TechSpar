@@ -171,6 +171,51 @@ const styles = {
     fontSize: 13,
     color: "var(--text)",
   },
+  // Dimension scores card (resume interview)
+  dimensionCard: {
+    background: "var(--bg-card)",
+    border: "1px solid var(--border)",
+    borderRadius: 16,
+    padding: "24px 28px",
+    marginBottom: 24,
+  },
+  dimensionTitle: {
+    fontSize: 18,
+    fontWeight: 600,
+    marginBottom: 16,
+  },
+  dimensionRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 10,
+  },
+  dimensionLabel: {
+    width: 100,
+    fontSize: 13,
+    color: "var(--text-dim)",
+    flexShrink: 0,
+    textAlign: "right",
+  },
+  dimensionBarBg: {
+    flex: 1,
+    height: 8,
+    borderRadius: 4,
+    background: "var(--border)",
+    overflow: "hidden",
+  },
+  dimensionBarFill: {
+    height: "100%",
+    borderRadius: 4,
+    transition: "width 0.5s ease",
+  },
+  dimensionScore: {
+    width: 36,
+    fontSize: 14,
+    fontWeight: 600,
+    textAlign: "right",
+    flexShrink: 0,
+  },
   // Resume review (plain markdown)
   reviewContent: {
     background: "var(--bg-card)",
@@ -229,6 +274,45 @@ function getScoreColor(score) {
   if (score >= 6) return { bg: "rgba(108,92,231,0.15)", color: "var(--accent-light)" };
   if (score >= 4) return { bg: "rgba(253,203,110,0.2)", color: "#e2b93b" };
   return { bg: "rgba(225,112,85,0.15)", color: "var(--red)" };
+}
+
+const DIMENSION_LABELS = {
+  technical_depth: "技术深度",
+  project_articulation: "项目表达",
+  communication: "表达能力",
+  problem_solving: "问题解决",
+};
+
+function DimensionScores({ dimensionScores, avgScore }) {
+  if (!dimensionScores) return null;
+  const entries = Object.entries(DIMENSION_LABELS).filter(([k]) => dimensionScores[k] != null);
+  if (!entries.length) return null;
+
+  return (
+    <div style={styles.dimensionCard}>
+      <div style={styles.dimensionTitle}>
+        维度评分
+        {avgScore != null && (
+          <span style={{ fontSize: 14, fontWeight: 400, color: "var(--text-dim)", marginLeft: 12 }}>
+            综合 {avgScore}/10
+          </span>
+        )}
+      </div>
+      {entries.map(([key, label]) => {
+        const score = dimensionScores[key];
+        const color = score >= 8 ? "var(--green)" : score >= 6 ? "var(--accent-light)" : score >= 4 ? "#e2b93b" : "var(--red)";
+        return (
+          <div key={key} style={styles.dimensionRow}>
+            <div style={styles.dimensionLabel}>{label}</div>
+            <div style={styles.dimensionBarBg}>
+              <div style={{ ...styles.dimensionBarFill, width: `${score * 10}%`, background: color }} />
+            </div>
+            <div style={{ ...styles.dimensionScore, color }}>{score}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function DrillReview({ scores, overall, questions, answers, sessionId }) {
@@ -416,19 +500,13 @@ export default function Review() {
           if (data.transcript) {
             setMessages(data.transcript);
             // Reconstruct answers from transcript for drill
+            // Transcript is stored as alternating Q(assistant)/A(user) pairs per question
             if (data.mode === "topic_drill" && data.questions) {
-              const ans = [];
-              for (let i = 0; i < data.transcript.length; i++) {
-                const msg = data.transcript[i];
-                if (msg.role === "user") {
-                  const prevQ = data.questions.find((q) =>
-                    i > 0 && data.transcript[i - 1].content === q.question
-                  );
-                  if (prevQ) {
-                    ans.push({ question_id: prevQ.id, answer: msg.content });
-                  }
-                }
-              }
+              const userMsgs = data.transcript.filter((m) => m.role === "user");
+              const ans = data.questions.map((q, i) => ({
+                question_id: q.id,
+                answer: userMsgs[i]?.content || "",
+              }));
               setAnswers(ans);
             }
           }
@@ -472,6 +550,10 @@ export default function Review() {
         />
       ) : (
         <>
+          <DimensionScores
+            dimensionScores={stateData.dimension_scores || overall?.dimension_scores}
+            avgScore={stateData.avg_score ?? overall?.avg_score}
+          />
           <div style={styles.reviewContent}>
             <div className="md-content">
               <ReactMarkdown>{review || ""}</ReactMarkdown>

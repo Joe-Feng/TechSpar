@@ -43,41 +43,56 @@ const styles = {
   chatArea: {
     flex: 1,
     overflowY: "auto",
-    padding: "24px",
+    padding: "32px 24px",
     display: "flex",
     flexDirection: "column",
-    gap: 20,
+    gap: 28,
+    maxWidth: 800,
+    width: "100%",
+    margin: "0 auto",
   },
   inputArea: {
-    padding: "16px 24px",
-    borderTop: "1px solid var(--border)",
-    background: "var(--bg-card)",
+    padding: "16px 24px 24px",
+    background: "transparent",
     display: "flex",
-    gap: 12,
+    justifyContent: "center",
+  },
+  inputWrapper: {
+    position: "relative",
+    width: "100%",
+    maxWidth: 800,
   },
   textarea: {
-    flex: 1,
-    padding: "12px 16px",
-    borderRadius: "var(--radius)",
+    width: "100%",
+    padding: "16px 20px",
+    borderRadius: 16,
     border: "1px solid var(--border)",
-    background: "var(--bg-input)",
+    background: "var(--bg-card)",
     color: "var(--text)",
     resize: "none",
     outline: "none",
-    minHeight: 48,
-    maxHeight: 200,
+    minHeight: 80,
+    maxHeight: 240,
     lineHeight: 1.5,
     fontSize: 15,
+    boxSizing: "border-box",
   },
   sendBtn: {
-    padding: "12px 24px",
-    borderRadius: "var(--radius)",
+    position: "absolute",
+    right: 8,
+    bottom: 8,
+    width: 36,
+    height: 36,
+    borderRadius: "50%",
     background: "var(--accent)",
     color: "#fff",
     fontWeight: 500,
-    fontSize: 15,
-    alignSelf: "flex-end",
+    fontSize: 16,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
     transition: "opacity 0.2s",
+    padding: 0,
   },
   thinking: {
     display: "flex",
@@ -641,23 +656,18 @@ export default function Interview() {
       </div>
 
       <div style={styles.inputArea}>
-        <textarea
-          ref={textareaRef}
-          style={styles.textarea}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={finished ? "面试已结束，点击右上角查看复盘" : "输入你的回答... (Enter 发送, Shift+Enter 换行)"}
-          disabled={finished || sending}
-          rows={1}
-        />
-        <button
-          style={{ ...styles.sendBtn, opacity: sending || finished ? 0.4 : 1 }}
-          onClick={handleSend}
-          disabled={sending || finished}
-        >
-          发送
-        </button>
+        <div style={styles.inputWrapper}>
+          <textarea
+            ref={textareaRef}
+            style={styles.textarea}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={finished ? "面试已结束，点击右上角查看复盘" : "输入你的回答... (Enter 发送, Shift+Enter 换行)"}
+            disabled={finished || sending}
+            rows={3}
+          />
+        </div>
       </div>
 
       <style>{`

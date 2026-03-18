@@ -400,14 +400,20 @@ async def end_interview(session_id: str, body: EndDrillRequest = None):
         topic=topic_name,
     )
 
-    save_review(session_id, review, scores, weak_points)
-
     extraction = await update_profile_after_interview(
         mode=entry["mode"].value,
         topic=entry.get("topic"),
         messages=messages,
         scores=scores,
     )
+
+    # Persist dimension_scores + avg_score into session for later review loading
+    resume_overall = {}
+    if extraction.get("dimension_scores"):
+        resume_overall["dimension_scores"] = extraction["dimension_scores"]
+    if extraction.get("avg_score"):
+        resume_overall["avg_score"] = extraction["avg_score"]
+    save_review(session_id, review, scores, weak_points, overall=resume_overall)
 
     del _graphs[session_id]
 
@@ -420,6 +426,8 @@ async def end_interview(session_id: str, body: EndDrillRequest = None):
             "new_strong_points": extraction.get("strong_points", []),
             "session_summary": extraction.get("session_summary", ""),
         },
+        "dimension_scores": extraction.get("dimension_scores"),
+        "avg_score": extraction.get("avg_score"),
     }
 
 

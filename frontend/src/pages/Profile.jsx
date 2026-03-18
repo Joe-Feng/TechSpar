@@ -197,6 +197,7 @@ function ScoreChart({ history }) {
     score: h.avg_score,
     date: h.date,
     topic: h.topic || "简历",
+    mode: h.mode,
   }));
 
   const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
@@ -236,11 +237,15 @@ function ScoreChart({ history }) {
       {/* Line */}
       <path d={linePath} fill="none" stroke="var(--accent-light)" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
 
-      {/* Dots */}
+      {/* Dots — green for drill, purple for resume */}
       {points.map((p, i) => (
         <g key={i}>
-          <circle cx={p.x} cy={p.y} r={4} fill={getScoreColor(p.score)} stroke="var(--bg-card)" strokeWidth={2} />
-          <title>{`${p.date} ${p.topic}: ${p.score}/10`}</title>
+          <circle
+            cx={p.x} cy={p.y} r={4}
+            fill={p.mode === "resume" ? "var(--accent-light)" : "var(--green)"}
+            stroke="var(--bg-card)" strokeWidth={2}
+          />
+          <title>{`${p.date} ${p.mode === "resume" ? "简历面试" : p.topic}: ${p.score}/10`}</title>
         </g>
       ))}
 
@@ -317,25 +322,47 @@ export default function Profile() {
 
       {/* Stats */}
       <div style={styles.section}>
-        <div style={styles.sectionTitle}>面试统计</div>
-        <div style={styles.statGrid}>
-          <div style={styles.statItem}>
+        <div style={styles.sectionTitle}>练习统计</div>
+        {/* Overview row */}
+        <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+          <div style={{ ...styles.statItem, flex: 1 }}>
             <div style={styles.statValue}>{stats.total_sessions}</div>
-            <div style={styles.statLabel}>总面试次数</div>
+            <div style={styles.statLabel}>总练习次数</div>
           </div>
-          <div style={styles.statItem}>
-            <div style={styles.statValue}>{stats.resume_sessions || 0}</div>
-            <div style={styles.statLabel}>简历面试</div>
-          </div>
-          <div style={styles.statItem}>
-            <div style={styles.statValue}>{stats.drill_sessions || 0}</div>
-            <div style={styles.statLabel}>专项训练</div>
-          </div>
-          <div style={styles.statItem}>
-            <div style={{ ...styles.statValue, color: "var(--green)" }}>
+          <div style={{ ...styles.statItem, flex: 1 }}>
+            <div style={{ ...styles.statValue, fontSize: 32, color: "var(--green)" }}>
               {stats.avg_score || "-"}
             </div>
-            <div style={styles.statLabel}>平均分</div>
+            <div style={styles.statLabel}>综合平均分</div>
+          </div>
+        </div>
+        {/* Two mode columns */}
+        <div style={{ display: "flex", gap: 12 }}>
+          <div style={{ flex: 1, background: "var(--bg-hover)", borderRadius: 8, padding: 14, borderLeft: "3px solid var(--accent-light)" }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--accent-light)", marginBottom: 10 }}>简历面试</div>
+            <div style={{ display: "flex", gap: 12 }}>
+              <div style={{ flex: 1, textAlign: "center" }}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: "var(--accent-light)" }}>{stats.resume_sessions || 0}</div>
+                <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 2 }}>次数</div>
+              </div>
+              <div style={{ flex: 1, textAlign: "center" }}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: "var(--accent-light)" }}>{stats.resume_avg_score ?? "-"}</div>
+                <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 2 }}>平均分</div>
+              </div>
+            </div>
+          </div>
+          <div style={{ flex: 1, background: "var(--bg-hover)", borderRadius: 8, padding: 14, borderLeft: "3px solid var(--green)" }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--green)", marginBottom: 10 }}>专项训练</div>
+            <div style={{ display: "flex", gap: 12 }}>
+              <div style={{ flex: 1, textAlign: "center" }}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: "var(--green)" }}>{stats.drill_sessions || 0}</div>
+                <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 2 }}>次数</div>
+              </div>
+              <div style={{ flex: 1, textAlign: "center" }}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: "var(--green)" }}>{stats.drill_avg_score ?? "-"}</div>
+                <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 2 }}>平均分</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
