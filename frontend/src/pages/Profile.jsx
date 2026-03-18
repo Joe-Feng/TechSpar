@@ -176,6 +176,29 @@ const styles = {
   },
 };
 
+function CollapsibleList({ items, limit, renderItem }) {
+  const [expanded, setExpanded] = useState(false);
+  const show = expanded ? items : items.slice(0, limit);
+  const hasMore = items.length > limit;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {show.map((item, i) => renderItem(item, i))}
+      {hasMore && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          style={{
+            background: "none", border: "none", color: "var(--accent-light)",
+            fontSize: 13, cursor: "pointer", padding: "4px 0", textAlign: "left",
+          }}
+        >
+          {expanded ? "收起" : `展开更多 (+${items.length - limit})`}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function getScoreColor(score) {
   if (score >= 8) return "var(--green)";
   if (score >= 6) return "var(--accent-light)";
@@ -412,23 +435,38 @@ export default function Profile() {
         </div>
       )}
 
-      {/* Active Weak Points */}
-      {weakActive.length > 0 && (
-        <div style={styles.section}>
-          <div style={styles.sectionTitle}>
-            待改进 <span style={{ ...styles.badge, ...styles.activeBadge }}>{weakActive.length}</span>
-          </div>
-          <div style={styles.weakList}>
-            {weakActive.map((w, i) => (
-              <div key={i} style={styles.weakItem}>
-                <span style={styles.weakText}>{w.point}</span>
-                <div style={styles.weakMeta}>
-                  {w.topic && <span style={{ ...styles.badge, ...styles.topicBadge }}>{w.topic}</span>}
-                  <span>出现 {w.times_seen} 次</span>
-                </div>
+      {/* Weak & Strong side by side */}
+      {(weakActive.length > 0 || (profile.strong_points || []).length > 0) && (
+        <div style={{ display: "flex", gap: 12, marginBottom: 28 }}>
+          {/* Weak points column */}
+          {weakActive.length > 0 && (
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={styles.sectionTitle}>
+                待改进 <span style={{ ...styles.badge, ...styles.activeBadge }}>{weakActive.length}</span>
               </div>
-            ))}
-          </div>
+              <CollapsibleList items={weakActive} limit={3} renderItem={(w, i) => (
+                <div key={i} style={styles.weakItem}>
+                  <span style={styles.weakText}>{w.point}</span>
+                  <div style={styles.weakMeta}>
+                    {w.topic && <span style={{ ...styles.badge, ...styles.topicBadge }}>{w.topic}</span>}
+                    <span>出现 {w.times_seen} 次</span>
+                  </div>
+                </div>
+              )} />
+            </div>
+          )}
+          {/* Strong points column */}
+          {(profile.strong_points || []).length > 0 && (
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={styles.sectionTitle}>强项</div>
+              <CollapsibleList items={profile.strong_points} limit={3} renderItem={(s, i) => (
+                <div key={i} style={{ ...styles.weakItem, borderLeft: "3px solid var(--green)" }}>
+                  <span>{s.point}</span>
+                  {s.topic && <span style={{ ...styles.badge, ...styles.topicBadge }}>{s.topic}</span>}
+                </div>
+              )} />
+            </div>
+          )}
         </div>
       )}
 
@@ -449,36 +487,29 @@ export default function Profile() {
         </div>
       )}
 
-      {/* Strong Points */}
-      {(profile.strong_points || []).length > 0 && (
-        <div style={styles.section}>
-          <div style={styles.sectionTitle}>强项</div>
-          <div style={styles.weakList}>
-            {profile.strong_points.map((s, i) => (
-              <div key={i} style={{ ...styles.weakItem, borderLeft: "3px solid var(--green)" }}>
-                <span>{s.point}</span>
-                {s.topic && <span style={{ ...styles.badge, ...styles.topicBadge }}>{s.topic}</span>}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Thinking Patterns */}
+      {/* Thinking Patterns — two columns */}
       {((profile.thinking_patterns?.strengths || []).length > 0 ||
         (profile.thinking_patterns?.gaps || []).length > 0) && (
         <div style={styles.section}>
           <div style={styles.sectionTitle}>思维模式</div>
-          {(profile.thinking_patterns.strengths || []).map((s, i) => (
-            <div key={`s-${i}`} style={{ ...styles.thinkingItem, ...styles.thinkingStrength }}>
-              {s}
-            </div>
-          ))}
-          {(profile.thinking_patterns.gaps || []).map((g, i) => (
-            <div key={`g-${i}`} style={{ ...styles.thinkingItem, ...styles.thinkingGap }}>
-              {g}
-            </div>
-          ))}
+          <div style={{ display: "flex", gap: 12 }}>
+            {(profile.thinking_patterns.strengths || []).length > 0 && (
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12, color: "var(--green)", fontWeight: 600, marginBottom: 6 }}>优势</div>
+                <CollapsibleList items={profile.thinking_patterns.strengths} limit={3} renderItem={(s, i) => (
+                  <div key={i} style={{ ...styles.thinkingItem, ...styles.thinkingStrength }}>{s}</div>
+                )} />
+              </div>
+            )}
+            {(profile.thinking_patterns.gaps || []).length > 0 && (
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12, color: "var(--red)", fontWeight: 600, marginBottom: 6 }}>短板</div>
+                <CollapsibleList items={profile.thinking_patterns.gaps} limit={3} renderItem={(g, i) => (
+                  <div key={i} style={{ ...styles.thinkingItem, ...styles.thinkingGap }}>{g}</div>
+                )} />
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -490,14 +521,18 @@ export default function Profile() {
             <div>{profile.communication.style}</div>
             {(profile.communication.habits || []).length > 0 && (
               <div style={{ marginTop: 12 }}>
-                <strong>习惯: </strong>
-                {profile.communication.habits.join(" | ")}
+                <strong style={{ fontSize: 13 }}>习惯</strong>
+                <ul style={{ margin: "6px 0 0", paddingLeft: 18, lineHeight: 1.8 }}>
+                  {profile.communication.habits.map((h, i) => <li key={i}>{h}</li>)}
+                </ul>
               </div>
             )}
             {(profile.communication.suggestions || []).length > 0 && (
-              <div style={{ marginTop: 8 }}>
-                <strong>建议: </strong>
-                {profile.communication.suggestions.join(" | ")}
+              <div style={{ marginTop: 12 }}>
+                <strong style={{ fontSize: 13 }}>建议</strong>
+                <ul style={{ margin: "6px 0 0", paddingLeft: 18, lineHeight: 1.8 }}>
+                  {profile.communication.suggestions.map((s, i) => <li key={i}>{s}</li>)}
+                </ul>
               </div>
             )}
           </div>

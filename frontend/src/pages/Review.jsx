@@ -238,7 +238,7 @@ const styles = {
   },
   transcriptToggle: {
     marginTop: 24,
-    marginLeft: 12,
+    marginRight: 12,
     padding: "10px 20px",
     borderRadius: "var(--radius)",
     background: "transparent",
