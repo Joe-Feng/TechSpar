@@ -9,6 +9,7 @@ import {
   updateHighFreq,
   createTopic,
   deleteTopic,
+  generateKnowledge,
 } from "../api/interview";
 
 export default function Knowledge() {
@@ -28,6 +29,8 @@ export default function Knowledge() {
 
   const [newFileName, setNewFileName] = useState("");
   const [showNewFile, setShowNewFile] = useState(false);
+
+  const [generating, setGenerating] = useState(false);
 
   const [showAddTopic, setShowAddTopic] = useState(false);
   const [newTopicKey, setNewTopicKey] = useState("");
@@ -110,6 +113,19 @@ export default function Knowledge() {
       if (expandedFile === filename) setExpandedFile(null);
     } catch (e) { alert("删除失败: " + e.message); }
   };
+
+  const handleGenerate = async () => {
+    setGenerating(true);
+    try {
+      await generateKnowledge(selected);
+      await loadCore(selected);
+      setExpandedFile("README.md");
+    } catch (e) { alert("生成失败: " + e.message); }
+    setGenerating(false);
+  };
+
+  const coreIsEmpty = coreFiles.length === 0 ||
+    (coreFiles.length === 1 && coreFiles[0].filename === "README.md" && (coreFiles[0].content?.length || 0) <= 20);
 
   const handleAddTopic = async () => {
     const key = newTopicKey.trim();
@@ -247,7 +263,18 @@ export default function Knowledge() {
                     <button className="px-5 py-2 rounded-lg border border-border bg-hover text-text text-[13px] cursor-pointer" onClick={() => { setShowNewFile(false); setNewFileName(""); }}>取消</button>
                   </>
                 ) : (
-                  <button className="px-5 py-2 rounded-lg border border-border bg-hover text-text text-[13px] cursor-pointer" onClick={() => setShowNewFile(true)}>+ 新增文件</button>
+                  <>
+                    <button className="px-5 py-2 rounded-lg border border-border bg-hover text-text text-[13px] cursor-pointer" onClick={() => setShowNewFile(true)}>+ 新增文件</button>
+                    {coreIsEmpty && (
+                      <button
+                        className="px-5 py-2 rounded-lg bg-accent/15 border border-accent/40 text-accent-light text-[13px] cursor-pointer disabled:opacity-50"
+                        onClick={handleGenerate}
+                        disabled={generating}
+                      >
+                        {generating ? "正在生成..." : "✨ AI 生成基础内容"}
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
 

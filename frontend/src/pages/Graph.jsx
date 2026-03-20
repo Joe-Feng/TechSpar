@@ -56,6 +56,8 @@ export default function Graph() {
   const paintNode = useCallback((node, ctx) => {
     const r = 5 + (node.difficulty || 3) * 1.2;
     const color = scoreToColor(node.score);
+    const isLight = document.documentElement.getAttribute("data-theme") === "light";
+    const textColor = isLight ? "#18181B" : "#FAFAF9";
 
     // Glow for hovered node
     if (hoveredNode === node) {
@@ -72,14 +74,14 @@ export default function Graph() {
 
     // Label for hovered node
     if (hoveredNode === node) {
-      ctx.strokeStyle = "#FAFAF9";
+      ctx.strokeStyle = textColor;
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
       const label = node.focus_area || node.question.slice(0, 20);
       ctx.font = "11px DM Sans, sans-serif";
       ctx.textAlign = "center";
-      ctx.fillStyle = "#FAFAF9";
+      ctx.fillStyle = textColor;
       ctx.fillText(label, node.x, node.y - r - 6);
     }
   }, [hoveredNode]);

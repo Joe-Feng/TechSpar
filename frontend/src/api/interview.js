@@ -173,6 +173,14 @@ export async function createCoreKnowledge(topic, filename, content) {
   return res.json();
 }
 
+export async function generateKnowledge(topic) {
+  const res = await fetch(`${API_BASE}/knowledge/${topic}/generate`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 export async function getHighFreq(topic) {
   const res = await fetch(`${API_BASE}/knowledge/${topic}/high_freq`);
   return res.json();

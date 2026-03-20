@@ -624,6 +624,43 @@ async def create_core_knowledge(topic: str, body: dict):
     return {"ok": True, "filename": filename}
 
 
+@router.post("/knowledge/{topic}/generate")
+async def generate_core_knowledge(topic: str):
+    """Use LLM to generate foundational knowledge content for a topic."""
+    if topic not in TOPIC_MAP:
+        raise HTTPException(400, f"Unknown topic: {topic}")
+    from backend.llm_provider import get_langchain_llm
+    from langchain_core.messages import SystemMessage, HumanMessage
+
+    topics = load_topics()
+    topic_name = topics[topic].get("name", topic)
+
+    llm = get_langchain_llm()
+    resp = llm.invoke([
+        SystemMessage(content="你是一位资深技术面试官，擅长梳理技术领域的核心知识体系。"),
+        HumanMessage(content=(
+            f"请为「{topic_name}」这个技术领域生成一份核心知识梳理，作为面试出题和评分的参考依据。\n\n"
+            "要求：\n"
+            "- 用 Markdown 格式\n"
+            "- 以 `# {topic_name}` 作为标题\n"
+            "- 列出该领域最核心的 8-12 个知识点，每个用二级标题\n"
+            "- 每个知识点下用简洁的要点说明关键概念、原理、常见面试考点\n"
+            "- 重点覆盖：核心概念、工作原理、最佳实践、常见陷阱\n"
+            "- 保持简洁实用，面向面试准备场景\n"
+            "- 直接输出 Markdown 内容，不要包裹在代码块中"
+        )),
+    ])
+    content = resp.content.strip()
+
+    topic_dir = settings.knowledge_path / TOPIC_MAP[topic]
+    topic_dir.mkdir(parents=True, exist_ok=True)
+    readme = topic_dir / "README.md"
+    readme.write_text(content, encoding="utf-8")
+    _index_cache.pop(topic, None)
+
+    return {"ok": True, "content": content}
+
+
 @router.get("/knowledge/{topic}/high_freq")
 async def get_high_freq(topic: str):
     """Get high-frequency question bank for a topic."""

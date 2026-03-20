@@ -78,6 +78,10 @@
 }
 
 /* ── Base resets ── */
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Noto Sans SC", system-ui, sans-serif;
   background: var(--bg);
