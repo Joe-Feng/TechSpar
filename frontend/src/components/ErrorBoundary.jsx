@@ -1,5 +1,6 @@
 import { Component } from "react";
 import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 export default class ErrorBoundary extends Component {
   state = { error: null };
@@ -17,13 +18,14 @@ export default class ErrorBoundary extends Component {
         <div className="text-sm text-dim max-w-[400px] text-center break-words">
           {this.state.error?.message || "未知错误"}
         </div>
-        <button
-          className="mt-2 px-6 py-2.5 rounded-lg bg-accent text-white text-sm font-medium"
+        <Button
+          variant="gradient"
+          className="mt-2"
           onClick={() => this.setState({ error: null })}
         >
           重试
-        </button>
-        <Link to="/" className="text-sm text-accent-light">返回首页</Link>
+        </Button>
+        <Link to="/" className="text-sm text-primary hover:underline">返回首页</Link>
       </div>
     );
   }

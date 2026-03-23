@@ -45,7 +45,9 @@ function AppShell({ children }) {
   return (
     <div className="flex flex-col md:flex-row h-screen">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto flex flex-col">{children}</main>
+      <main className="flex-1 overflow-y-auto flex flex-col">
+        {children}
+      </main>
     </div>
   );
 }
