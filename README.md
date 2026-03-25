@@ -39,27 +39,31 @@ Try TechSpar online: **[https://aari.top/](https://aari.top/)**
 
 ## Overview
 
-传统面试工具是无状态的——每次练习都从零开始。TechSpar 构建了**持久化的候选人画像系统**：每次训练后自动提取薄弱点、评估掌握度、记录思维模式。下一次出题时，AI 面试官基于画像精准命中短板。
+传统面试工具是无状态的——每次练习都从零开始。TechSpar 构建了**持久化的候选人画像系统**：每次训练后自动提取薄弱点、评估掌握度、记录思维模式。下一次出题时，AI 面试官基于画像精准命中短板。下面是新版界面预览。
 
-<p align="center">
-  <img src="images/landing.png" alt="Landing Page" width="800" />
-</p>
+### 首页与训练总览
 
-<p align="center">
-  <img src="images/home.png" alt="Dashboard" width="800" />
-</p>
+| Landing | Dashboard |
+| --- | --- |
+| ![Landing page](images/landing.png) | ![Dashboard](images/home.png) |
 
-<p align="center">
-  <img src="images/profile-overview.png" alt="Profile" width="800" />
-</p>
+### 个人画像
 
-<p align="center">
-  <img src="images/profile-analysis.png" alt="Profile" width="800" />
-</p>
+| 画像总览 | 薄弱点与强项 | 沟通风格分析 |
+| --- | --- | --- |
+| ![Profile overview](images/profile-overview.png) | ![Profile insights](images/profile-insights.png) | ![Communication style analysis](images/profile-communication.png) |
 
-<p align="center">
-  <img src="images/3.png" alt="Profile" width="800" />
-</p>
+### 题库与图谱
+
+| 核心知识库 | 题目图谱 |
+| --- | --- |
+| ![Knowledge library](images/knowledge-library.png) | ![Question graph](images/question-graph.png) |
+
+### JD 定向备面与录音复盘
+
+| JD-focused interview prep | Recording review |
+| --- | --- |
+| ![Job prep](images/job-prep.png) | ![Recording review](images/recording-review.png) |
 
 
 ## Tech Stack

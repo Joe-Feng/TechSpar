@@ -29,83 +29,37 @@ TechSpar builds a **persistent candidate profile system**. After each session, i
 
 ## Screenshots
 
-### Home — Choose Training Mode & Domain
+### Landing & Dashboard
 
-<p align="center">
-  <img src="images/home.png" width="400" />
-</p>
+| Landing | Dashboard |
+| --- | --- |
+| ![Landing page](images/landing.png) | ![Dashboard](images/home.png) |
 
-Two modes: resume mock interview and focused drill, covering 12 technical domains.
+The landing page introduces the product flow, while the dashboard exposes the main training modes and your current learning snapshot.
 
-### Focused Drill — Personalized Questions & Answers
+### Personal Profile
 
-<p align="center">
-  <img src="images/drill.png" alt="Focused drill interface" width="400" />
-</p>
+| Overview | Weaknesses & Strengths | Communication Style |
+| --- | --- | --- |
+| ![Profile overview](images/profile-overview.png) | ![Profile insights](images/profile-insights.png) | ![Communication style analysis](images/profile-communication.png) |
 
-Each question is tagged with sub-domain and difficulty level. Answer one by one or skip.
+The profile page tracks practice statistics, mastery by domain, weak spots, strengths, thinking patterns, and communication habits in one place.
 
-### Session Review — Per-Question Scoring & Feedback
+### Knowledge Base & Question Graph
 
-<p align="center">
-  <img src="images/review.png" width="400" />
-</p>
+| Knowledge library | Question graph |
+| --- | --- |
+| ![Knowledge library](images/knowledge-library.png) | ![Question graph](images/question-graph.png) |
 
-Overall evaluation + weakness/highlight extraction + expandable per-question scoring and comments.
+The knowledge workspace manages domain documents and FAQ content, while the graph view visualizes question clusters and mastery distribution.
 
-### Profile — A Continuously Evolving Skill Portfolio
+### Job-Targeted Prep & Recording Review
 
-<p align="center">
-  <img src="images/profile-overview.png" width="400" />
-  <img src="images/profile-analysis.png" width="400" />
-</p>
+| Job-targeted prep | Recording review |
+| --- | --- |
+| ![Job prep](images/job-prep.png) | ![Recording review](images/recording-review.png) |
 
-Practice stats (average scores by mode), growth trends, domain mastery, areas to improve / strengths (collapsible), thinking patterns, and communication style suggestions.
-
-### Resume Interview Review — Dimensional Scoring & Deep Feedback
-
-<p align="center">
-  <img src="images/resume-review.png" width="400" />
-</p>
-
-After a resume interview, structured scoring across four dimensions — technical depth, project articulation, communication skills, and problem solving — with an LLM-generated review report.
-
-### History — All Sessions at a Glance
-
-<p align="center">
-  <img src="images/history.png" width="400" />
-</p>
-
-Filter by mode and domain to view scores and details for each session.
-
-### Topic Review — Growth Trajectory & Training Analysis
-
-<p align="center">
-  <img src="images/topic-review-1.png" width="400" />
-  <img src="images/topic-review-2.png" width="400" />
-</p>
-
-Per-domain mastery score (0-100), LLM-generated training review (progress trajectory · persistent weaknesses · overcome difficulties · next steps), and full training history.
-
-### Knowledge Base — Editable Domain Knowledge Documents
-
-<p align="center">
-  <img src="images/knowledge.png" alt="Knowledge base management" width="400" />
-</p>
-
-Each domain maintains its own core knowledge base and frequently asked questions, with Markdown editing support.
-
-### Mobile Responsive
-
-Fully responsive design for seamless training on mobile devices.
-
-<p align="center">
-  <img src="images/mobile-home.png" alt="Mobile home" width="200" />
-  <img src="images/mobile-profile.png" alt="Mobile profile" width="200" />
-  <img src="images/mobile-history.png" alt="Mobile history" width="200" />
-</p>
-
-Hamburger menu navigation, adaptive card stacking, collapsible sidebar, and more — built with Tailwind CSS v4 mobile-first responsive layout.
+TechSpar also supports JD-based interview prep and post-interview recording analysis for targeted practice and structured review.
 
 ## Architecture
 
