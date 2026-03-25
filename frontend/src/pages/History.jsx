@@ -108,7 +108,7 @@ export default function History() {
       <div className={cn(PAGE_CLASS, "space-y-3")}>
         <Skeleton className="h-8 w-40" />
         <Skeleton className="h-5 w-72" />
-        <Skeleton className="h-32 w-full rounded-[28px]" />
+        <Skeleton className="h-24 w-full rounded-[24px]" />
         {[...Array(5)].map((_, index) => (
           <Skeleton key={index} className="h-20 w-full rounded-[20px]" />
         ))}
@@ -122,87 +122,85 @@ export default function History() {
 
   return (
     <div className={PAGE_CLASS}>
-      <Card className="overflow-hidden border-primary/15 bg-[radial-gradient(circle_at_top_left,rgba(245,158,11,0.11),transparent_30%),linear-gradient(135deg,rgba(255,255,255,0.97),rgba(255,248,235,0.9))] dark:bg-[radial-gradient(circle_at_top_left,rgba(245,158,11,0.11),transparent_28%),linear-gradient(135deg,rgba(24,24,27,0.96),rgba(39,39,42,0.93))]">
-        <CardContent className="p-4 md:p-5 xl:p-6">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
-              <div className="min-w-0">
-                <div className="text-3xl font-display font-bold tracking-tight md:text-4xl">历史记录</div>
-                <div className="mt-1.5 max-w-3xl text-sm leading-6 text-dim">
-                  把每次训练当作一个工作条目来筛选和回看，重点直接落在模式、领域、得分和时间，不再拆成松散的大卡片。
-                </div>
-              </div>
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+        <div className="min-w-0">
+          <div className="text-3xl font-display font-bold tracking-tight md:text-4xl">历史记录</div>
+          <div className="mt-2 max-w-3xl text-sm leading-6 text-dim">
+            按模式和领域快速回看训练记录。这一页更像工作台，不需要再套一个统一的大横幅。
+          </div>
+        </div>
 
+        <div className="flex flex-wrap gap-2">
+          <HistorySummaryChip label="总记录" value={total} hint="已完成" />
+          <HistorySummaryChip label="当前列表" value={sessions.length} hint="已加载" />
+          <HistorySummaryChip
+            label="筛选"
+            value={activeFilterCount}
+            hint={hasFilters ? "进行中" : "未启用"}
+          />
+        </div>
+      </div>
+
+      <Card className="mt-4 border-border/80 bg-card/72">
+        <CardContent className="p-4 md:p-5">
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
+            <div className="min-w-0">
+              <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-dim/80">
+                <Filter size={13} />
+                模式筛选
+              </div>
               <div className="flex flex-wrap gap-2">
-                <HistorySummaryChip label="总记录" value={total} hint="已完成" />
-                <HistorySummaryChip label="当前列表" value={sessions.length} hint="已加载" />
-                <HistorySummaryChip
-                  label="筛选"
-                  value={activeFilterCount}
-                  hint={hasFilters ? "进行中" : "未启用"}
-                />
+                {FILTER_OPTIONS.map((option) => (
+                  <Button
+                    key={option.key}
+                    variant={modeFilter === option.key ? "secondary" : "ghost"}
+                    size="sm"
+                    className={cn(
+                      "h-9 rounded-full px-4",
+                      modeFilter === option.key && "border border-primary/40 bg-primary/10 text-text"
+                    )}
+                    onClick={() => handleModeChange(option.key)}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
               </div>
             </div>
 
-            <div className="grid gap-4 border-t border-border/70 pt-4 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
-              <div className="min-w-0">
-                <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-dim/80">
-                  <Filter size={13} />
-                  模式筛选
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {FILTER_OPTIONS.map((option) => (
-                    <Button
-                      key={option.key}
-                      variant={modeFilter === option.key ? "secondary" : "ghost"}
-                      size="sm"
-                      className={cn(
-                        "h-9 rounded-full px-4",
-                        modeFilter === option.key && "border border-primary/40 bg-primary/10 text-text"
-                      )}
-                      onClick={() => handleModeChange(option.key)}
-                    >
-                      {option.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
+            <div className="flex flex-col gap-2.5">
+              {showTopicFilter && (
+                <label className="flex items-center justify-between gap-3 rounded-2xl border border-border/80 bg-background/75 px-3 py-2.5 text-sm">
+                  <span className="shrink-0 text-dim">领域</span>
+                  <select
+                    className="min-w-0 flex-1 bg-transparent text-right text-text outline-none"
+                    value={topicFilter}
+                    onChange={(event) => handleTopicChange(event.target.value)}
+                  >
+                    <option value="all">全部领域</option>
+                    {topics.map((topic) => (
+                      <option key={topic} value={topic}>{topic}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
 
-              <div className="flex flex-col gap-2.5">
-                {showTopicFilter && (
-                  <label className="flex items-center justify-between gap-3 rounded-2xl border border-border/80 bg-card/82 px-3 py-2.5 text-sm">
-                    <span className="shrink-0 text-dim">领域</span>
-                    <select
-                      className="min-w-0 flex-1 bg-transparent text-right text-text outline-none"
-                      value={topicFilter}
-                      onChange={(event) => handleTopicChange(event.target.value)}
-                    >
-                      <option value="all">全部领域</option>
-                      {topics.map((topic) => (
-                        <option key={topic} value={topic}>{topic}</option>
-                      ))}
-                    </select>
-                  </label>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="rounded-full border border-border/80 bg-background/75 px-3 py-1.5 text-sm text-dim">
+                  {buildFilterSummary(modeFilter, topicFilter)}
+                </div>
+                {hasFilters && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 rounded-full px-3 text-dim hover:text-text"
+                    onClick={() => {
+                      setModeFilter("all");
+                      setTopicFilter("all");
+                    }}
+                  >
+                    清空筛选
+                  </Button>
                 )}
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="rounded-full border border-border/80 bg-card/82 px-3 py-1.5 text-sm text-dim">
-                    {buildFilterSummary(modeFilter, topicFilter)}
-                  </div>
-                  {hasFilters && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 rounded-full px-3 text-dim hover:text-text"
-                      onClick={() => {
-                        setModeFilter("all");
-                        setTopicFilter("all");
-                      }}
-                    >
-                      清空筛选
-                    </Button>
-                  )}
-                </div>
               </div>
             </div>
           </div>
