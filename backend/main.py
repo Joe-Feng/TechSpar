@@ -516,7 +516,7 @@ async def generate_retrospective(topic: str, background_tasks: BackgroundTasks,
 # ── Interview ──
 
 @router.post("/job-prep/preview")
-async def job_prep_preview(req: JobPrepPreviewRequest, user_id: str = Depends(get_current_user)):
+def job_prep_preview(req: JobPrepPreviewRequest, user_id: str = Depends(get_current_user)):
     """Analyze a JD and candidate fit before starting targeted practice."""
     jd_text = req.jd_text.strip()
     if len(jd_text) < 50:
@@ -537,7 +537,7 @@ async def job_prep_preview(req: JobPrepPreviewRequest, user_id: str = Depends(ge
 
 
 @router.post("/job-prep/start")
-async def job_prep_start(req: JobPrepStartRequest, user_id: str = Depends(get_current_user)):
+def job_prep_start(req: JobPrepStartRequest, user_id: str = Depends(get_current_user)):
     """Start a JD-targeted mock interview session."""
     jd_text = req.jd_text.strip()
     if len(jd_text) < 50:
@@ -601,7 +601,7 @@ async def job_prep_start(req: JobPrepStartRequest, user_id: str = Depends(get_cu
 
 
 @router.post("/interview/start")
-async def start_interview(req: StartInterviewRequest, user_id: str = Depends(get_current_user)):
+def start_interview(req: StartInterviewRequest, user_id: str = Depends(get_current_user)):
     """Start a new interview session."""
     session_id = str(uuid.uuid4())[:8]
 
@@ -657,7 +657,7 @@ async def start_interview(req: StartInterviewRequest, user_id: str = Depends(get
 
 
 @router.post("/interview/chat")
-async def chat(req: ChatRequest, user_id: str = Depends(get_current_user)):
+def chat(req: ChatRequest, user_id: str = Depends(get_current_user)):
     """Send user answer, get next interviewer response (resume mode only)."""
     if req.session_id not in _graphs:
         raise HTTPException(404, "Session not found. It may have expired (in-memory only).")
