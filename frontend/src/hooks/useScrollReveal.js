@@ -10,6 +10,12 @@ export default function useScrollReveal(options = {}) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+
+    if (reducedMotion || typeof IntersectionObserver === "undefined") {
+      el.setAttribute("data-revealed", "");
+      return;
+    }
 
     const observer = new IntersectionObserver(
       ([entry]) => {

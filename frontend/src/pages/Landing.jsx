@@ -43,6 +43,7 @@ const LOOP_MODULES = [
     accentText: "text-primary",
     previewClass: "border-primary/15 bg-primary/[0.05]",
     nodeClass: "absolute z-20 left-[3%] top-[14%] w-[164px]",
+    glowColor: "rgba(245,158,11,0.18)",
   },
   {
     key: "resume",
@@ -66,6 +67,7 @@ const LOOP_MODULES = [
     accentText: "text-green",
     previewClass: "border-green/15 bg-green/[0.05]",
     nodeClass: "absolute z-20 left-1/2 top-[2%] w-[164px] -translate-x-1/2",
+    glowColor: "rgba(34,197,94,0.18)",
   },
   {
     key: "job-prep",
@@ -89,6 +91,7 @@ const LOOP_MODULES = [
     accentText: "text-blue-400",
     previewClass: "border-blue-500/15 bg-blue-500/[0.05]",
     nodeClass: "absolute z-20 right-[3%] top-[14%] w-[164px]",
+    glowColor: "rgba(59,130,246,0.18)",
   },
   {
     key: "copilot",
@@ -113,6 +116,7 @@ const LOOP_MODULES = [
     previewClass: "border-teal/15 bg-teal/[0.06]",
     nodeClass: "absolute z-20 right-[4%] bottom-[16%] w-[176px]",
     highlight: true,
+    glowColor: "rgba(20,184,166,0.22)",
   },
   {
     key: "recording",
@@ -136,6 +140,7 @@ const LOOP_MODULES = [
     accentText: "text-orange",
     previewClass: "border-orange/15 bg-orange/[0.05]",
     nodeClass: "absolute z-20 left-[6%] bottom-[8%] w-[168px]",
+    glowColor: "rgba(251,146,60,0.18)",
   },
 ];
 
@@ -211,6 +216,8 @@ const MEMORY_SIGNALS = [
   "表达习惯 / 高危路径 / 实战失误",
 ];
 
+const revealStyle = (delay) => ({ "--reveal-delay": `${delay}s` });
+
 export default function Landing() {
   const navigate = useNavigate();
   const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "dark");
@@ -229,7 +236,7 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-bg text-text">
+    <div className="landing-motion min-h-screen bg-bg text-text">
       <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(245,158,11,0.035)_1px,transparent_1px),linear-gradient(to_bottom,rgba(245,158,11,0.035)_1px,transparent_1px)] bg-[size:72px_72px] opacity-60 pointer-events-none" />
 
       <header className="sticky top-0 z-40 border-b border-border/70 bg-bg/85 backdrop-blur-xl">
@@ -255,8 +262,8 @@ export default function Landing() {
 
       <main className="relative z-10">
         <section className="overflow-hidden px-6 pb-16 pt-12 md:px-10 md:pb-24 md:pt-16">
-          <div className="absolute left-[8%] top-24 h-56 w-56 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
-          <div className="absolute right-[10%] top-36 h-64 w-64 rounded-full bg-teal/10 blur-3xl pointer-events-none" />
+          <div className="ambient-orb absolute left-[8%] top-24 h-56 w-56 rounded-full bg-primary/10 blur-3xl pointer-events-none animate-drift-slow" />
+          <div className="ambient-orb absolute right-[10%] top-36 h-64 w-64 rounded-full bg-teal/10 blur-3xl pointer-events-none animate-drift-reverse" />
 
           <div className="mx-auto max-w-7xl">
             <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(350px,430px)] lg:items-start lg:gap-8 xl:grid-cols-[minmax(0,1.02fr)_minmax(380px,450px)] xl:gap-10">
@@ -288,13 +295,14 @@ export default function Landing() {
                   </Button>
                 </div>
 
-                <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:max-w-[820px] lg:grid-cols-3 xl:max-w-[880px] animate-fade-in-up [animation-delay:0.18s]">
+                <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:max-w-[820px] lg:grid-cols-3 xl:max-w-[880px]">
                   {HERO_SIGNALS.map((item) => {
                     const Icon = item.icon;
                     return (
                       <Card
                         key={item.title}
-                        className="border-border/80 bg-card/85 shadow-[0_20px_60px_rgba(15,23,42,0.06)] backdrop-blur-sm"
+                        className="animate-fade-in-up border-border/80 bg-card/85 shadow-[0_20px_60px_rgba(15,23,42,0.06)] backdrop-blur-sm transition-transform duration-300 hover:-translate-y-0.5"
+                        style={{ animationDelay: `${0.18 + HERO_SIGNALS.indexOf(item) * 0.08}s` }}
                       >
                         <CardContent className="p-4">
                           <div className="flex items-center gap-2.5">
@@ -311,7 +319,7 @@ export default function Landing() {
                 </div>
               </div>
 
-              <div className="relative animate-fade-in-up [animation-delay:0.2s] lg:-mt-1 lg:self-start lg:pt-0 xl:mt-0 xl:pt-2">
+              <div className="relative lg:-mt-1 lg:self-start lg:pt-0 xl:mt-0 xl:pt-2">
                 <div className="pointer-events-none absolute inset-x-10 top-0 hidden h-32 rounded-full bg-primary/10 blur-3xl lg:block" />
                 <div className="grid gap-4 lg:ml-auto lg:max-w-[440px] xl:max-w-[450px]">
                   {HERO_STATS.map((item, index) => {
@@ -320,10 +328,11 @@ export default function Landing() {
                       <Card
                         key={item.title}
                         className={cn(
-                          "rounded-[26px] border-border/80 bg-card/92 shadow-[0_24px_70px_rgba(15,23,42,0.07)] backdrop-blur-sm transition-transform duration-300 hover:-translate-y-0.5",
+                          "animate-fade-in-up rounded-[26px] border-border/80 bg-card/92 shadow-[0_24px_70px_rgba(15,23,42,0.07)] backdrop-blur-sm transition-transform duration-300 hover:-translate-y-0.5",
                           index === 1 && "lg:translate-x-2 xl:translate-x-4",
                           index === 2 && "lg:translate-x-4 xl:translate-x-8"
                         )}
+                        style={{ animationDelay: `${0.22 + index * 0.08}s` }}
                       >
                         <CardContent className="p-5 md:p-6">
                           <div className="flex items-start gap-4">
@@ -356,11 +365,13 @@ export default function Landing() {
 
         <section id="loop" ref={loopRef} className="scroll-reveal px-6 pb-16 md:px-10 md:pb-24">
           <div className="mx-auto max-w-7xl">
-            <SectionHeading
-              label="面试闭环"
-              title="五个模块不是五个孤岛，而是一套共享画像的系统"
-              desc="每个模块都有自己的输入与输出，但所有结果最终都会回写到同一套长期记忆里，影响下一轮训练、辅助和复盘。"
-            />
+            <div className="reveal-item" style={revealStyle(0.04)}>
+              <SectionHeading
+                label="面试闭环"
+                title="五个模块不是五个孤岛，而是一套共享画像的系统"
+                desc="每个模块都有自己的输入与输出，但所有结果最终都会回写到同一套长期记忆里，影响下一轮训练、辅助和复盘。"
+              />
+            </div>
 
             <div className="relative mt-10 grid gap-4 xl:grid-cols-5">
               <div className="pointer-events-none absolute left-[8%] right-[8%] top-10 hidden h-px bg-gradient-to-r from-transparent via-primary/35 to-transparent xl:block" />
@@ -370,24 +381,34 @@ export default function Landing() {
                   <Card
                     key={item.key}
                     className={cn(
-                      "relative overflow-hidden rounded-[24px] border-border/80 bg-card/92 shadow-[0_20px_60px_rgba(15,23,42,0.06)] backdrop-blur-sm transition-transform duration-300 hover:-translate-y-1",
+                      "loop-module-card reveal-item relative overflow-hidden rounded-[24px] border-border/80 bg-card/92 shadow-[0_20px_60px_rgba(15,23,42,0.06)] backdrop-blur-sm",
                       item.highlight && "border-teal/20 shadow-[0_24px_80px_rgba(20,184,166,0.12)]"
                     )}
+                    style={{ ...revealStyle(0.1 + index * 0.08), "--loop-glow": item.glowColor }}
                   >
                     {index < LOOP_MODULES.length - 1 && (
-                      <div className="absolute -right-3 top-10 hidden h-8 w-8 items-center justify-center rounded-full border border-primary/15 bg-bg text-primary xl:flex">
+                      <div
+                        className="loop-module-arrow absolute -right-3 top-10 hidden h-8 w-8 items-center justify-center rounded-full border border-primary/15 bg-bg text-primary xl:flex"
+                        style={{ "--loop-glow": item.glowColor }}
+                      >
                         <ArrowRight size={14} />
                       </div>
                     )}
-                    <div className={cn("absolute inset-x-0 top-0 h-1", item.chipClass)} />
-                    <CardContent className="p-5">
+                    <div
+                      className={cn("loop-module-bar absolute inset-x-0 top-0 h-1", item.chipClass)}
+                      style={{ "--loop-glow": item.glowColor }}
+                    />
+                    <CardContent className="card-content-layer p-5">
                       <div className="text-[11px] uppercase tracking-[0.24em] text-dim">{item.step}</div>
                       <div className="mt-4 flex items-center gap-3">
-                        <div className={cn("flex h-11 w-11 items-center justify-center rounded-2xl", item.iconClass)}>
+                        <div
+                          className={cn("loop-module-icon flex h-11 w-11 items-center justify-center rounded-2xl", item.iconClass)}
+                          style={{ "--loop-glow": item.glowColor }}
+                        >
                           <Icon size={20} />
                         </div>
                         <div>
-                          <div className="text-base font-semibold">{item.title}</div>
+                          <div className="loop-module-title text-base font-semibold">{item.title}</div>
                           <div className="text-sm text-dim">{item.headline}</div>
                         </div>
                       </div>
@@ -397,7 +418,11 @@ export default function Landing() {
                         <div className="text-[11px] uppercase tracking-[0.22em] text-dim">写回画像</div>
                         <div className="mt-3 flex flex-wrap gap-2">
                           {item.writeback.map((tag) => (
-                            <span key={tag} className={cn("rounded-full px-2.5 py-1 text-xs font-medium", item.chipClass)}>
+                            <span
+                              key={tag}
+                              className={cn("loop-module-tag rounded-full px-2.5 py-1 text-xs font-medium", item.chipClass)}
+                              style={{ "--loop-glow": item.glowColor }}
+                            >
                               {tag}
                             </span>
                           ))}
@@ -413,19 +438,22 @@ export default function Landing() {
 
         <section ref={memoryRef} className="scroll-reveal px-6 pb-16 md:px-10 md:pb-24">
           <div className="mx-auto max-w-7xl">
-            <SectionHeading
-              label="长期记忆"
-              title="系统为什么会越练越懂你"
-              desc="TechSpar 的关键不在于再生成一组题，而在于把不同场景里的信号整合成同一套长期画像，并持续拿它驱动下一轮。"
-            />
+            <div className="reveal-item" style={revealStyle(0.04)}>
+              <SectionHeading
+                label="长期记忆"
+                title="系统为什么会越练越懂你"
+                desc="TechSpar 的关键不在于再生成一组题，而在于把不同场景里的信号整合成同一套长期画像，并持续拿它驱动下一轮。"
+              />
+            </div>
 
             <div className="mt-10 grid gap-4 md:grid-cols-3">
-              {MEMORY_LAYERS.map((item) => {
+              {MEMORY_LAYERS.map((item, index) => {
                 const Icon = item.icon;
                 return (
                   <Card
                     key={item.title}
-                    className="rounded-[24px] border-border/80 bg-card/92 shadow-[0_20px_60px_rgba(15,23,42,0.06)] backdrop-blur-sm"
+                    className="reveal-item rounded-[24px] border-border/80 bg-card/92 shadow-[0_20px_60px_rgba(15,23,42,0.06)] backdrop-blur-sm"
+                    style={revealStyle(0.1 + index * 0.08)}
                   >
                     <CardContent className="p-6">
                       <div className="flex items-center gap-3">
@@ -444,7 +472,10 @@ export default function Landing() {
               })}
             </div>
 
-            <Card className="mt-6 rounded-[28px] border-primary/15 bg-gradient-to-br from-primary/10 via-card to-teal/8 shadow-[0_24px_80px_rgba(245,158,11,0.12)]">
+            <Card
+              className="reveal-item mt-6 rounded-[28px] border-primary/15 bg-gradient-to-br from-primary/10 via-card to-teal/8 shadow-[0_24px_80px_rgba(245,158,11,0.12)]"
+              style={revealStyle(0.2)}
+            >
               <CardContent className="p-6 md:p-8">
                 <div className="grid gap-8 lg:grid-cols-[0.95fr,1.05fr] lg:items-center">
                   <div>
@@ -462,10 +493,11 @@ export default function Landing() {
                   </div>
 
                   <div className="grid gap-3 sm:grid-cols-3">
-                    {MEMORY_SIGNALS.map((item) => (
+                    {MEMORY_SIGNALS.map((item, index) => (
                       <div
                         key={item}
-                        className="rounded-2xl border border-border/80 bg-bg/85 px-4 py-4 text-sm text-dim shadow-sm"
+                        className="reveal-item rounded-2xl border border-border/80 bg-bg/85 px-4 py-4 text-sm text-dim shadow-sm"
+                        style={revealStyle(0.28 + index * 0.07)}
                       >
                         {item}
                       </div>
@@ -479,7 +511,7 @@ export default function Landing() {
 
         <section ref={ctaRef} className="scroll-reveal px-6 pb-20 md:px-10 md:pb-24">
           <div className="mx-auto max-w-7xl">
-            <Card className="overflow-hidden rounded-[30px] border-border/80 bg-card/95 shadow-[0_30px_100px_rgba(15,23,42,0.08)]">
+            <Card className="reveal-item overflow-hidden rounded-[30px] border-border/80 bg-card/95 shadow-[0_30px_100px_rgba(15,23,42,0.08)]" style={revealStyle(0.08)}>
               <CardContent className="p-6 md:p-8">
                 <div className="grid gap-8 lg:grid-cols-[1fr,0.85fr] lg:items-center">
                   <div>
@@ -510,10 +542,11 @@ export default function Landing() {
                       "实时 Copilot 辅助真实面试",
                       "录音复盘把失误写回系统",
                       "下一轮训练自动更有针对性",
-                    ].map((item) => (
+                    ].map((item, index) => (
                       <div
                         key={item}
-                        className="rounded-2xl border border-border/80 bg-bg/85 px-4 py-4 text-sm text-dim shadow-sm"
+                        className="reveal-item rounded-2xl border border-border/80 bg-bg/85 px-4 py-4 text-sm text-dim shadow-sm"
+                        style={revealStyle(0.16 + index * 0.06)}
                       >
                         {item}
                       </div>
@@ -594,6 +627,8 @@ function LoopVisual() {
               strokeWidth="2"
               strokeLinecap="round"
               markerEnd="url(#loop-arrow)"
+              className="loop-beam"
+              style={{ "--beam-delay": "0s" }}
             />
             <path
               d="M224 134 A176 176 0 0 1 362 172"
@@ -601,6 +636,8 @@ function LoopVisual() {
               strokeWidth="2"
               strokeLinecap="round"
               markerEnd="url(#loop-arrow)"
+              className="loop-beam"
+              style={{ "--beam-delay": "0.4s" }}
             />
             <path
               d="M362 176 A176 176 0 0 1 340 432"
@@ -608,6 +645,8 @@ function LoopVisual() {
               strokeWidth="2"
               strokeLinecap="round"
               markerEnd="url(#loop-arrow)"
+              className="loop-beam"
+              style={{ "--beam-delay": "0.8s" }}
             />
             <path
               d="M336 436 A176 176 0 0 1 116 500"
@@ -615,6 +654,8 @@ function LoopVisual() {
               strokeWidth="2"
               strokeLinecap="round"
               markerEnd="url(#loop-arrow)"
+              className="loop-beam"
+              style={{ "--beam-delay": "1.2s" }}
             />
             <path
               d="M112 494 A176 176 0 0 1 78 168"
@@ -622,6 +663,8 @@ function LoopVisual() {
               strokeWidth="2"
               strokeLinecap="round"
               markerEnd="url(#loop-arrow)"
+              className="loop-beam"
+              style={{ "--beam-delay": "1.6s" }}
             />
             <path d="M220 310 L78 168" stroke="rgba(245,158,11,0.08)" strokeWidth="1.5" />
             <path d="M220 310 L220 134" stroke="rgba(34,197,94,0.08)" strokeWidth="1.5" />
@@ -640,7 +683,7 @@ function LoopVisual() {
             />
           ))}
 
-          <div className="absolute z-10 left-1/2 top-1/2 w-[220px] -translate-x-1/2 -translate-y-1/2">
+          <div className="loop-shell absolute z-10 left-1/2 top-1/2 w-[220px] -translate-x-1/2 -translate-y-1/2">
             <CenterMemoryCard activeModule={activeModule} />
           </div>
         </div>
@@ -652,7 +695,9 @@ function LoopVisual() {
         </div>
 
         <div className="absolute right-8 top-8 bottom-8 w-[32%]">
-          <DetailPanel module={activeModule} />
+          <div key={activeModule.key} className="detail-panel-enter h-full">
+            <DetailPanel module={activeModule} />
+          </div>
         </div>
       </div>
     </div>
@@ -661,6 +706,7 @@ function LoopVisual() {
 
 function LoopNode({ item, active, onSelect, className, mobile = false }) {
   const Icon = item.icon;
+  const motionDelay = `${(Number(item.step) - 1) * 0.35}s`;
 
   return (
     <button
@@ -679,25 +725,27 @@ function LoopNode({ item, active, onSelect, className, mobile = false }) {
         className
       )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className={cn("flex h-10 w-10 items-center justify-center rounded-2xl", item.iconClass)}>
-          <Icon size={18} />
-        </div>
-        <div className="flex items-center gap-2">
-          {active && (
-            <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", item.accentBg, item.accentText)}>
-              当前
-            </span>
-          )}
-          <div className="rounded-full border border-border/70 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-dim">
-            {item.step}
+      <div className={cn(!mobile && "loop-node-body")} style={!mobile ? { "--float-delay": motionDelay } : undefined}>
+        <div className="flex items-start justify-between gap-3">
+          <div className={cn("flex h-10 w-10 items-center justify-center rounded-2xl", item.iconClass)}>
+            <Icon size={18} />
+          </div>
+          <div className="flex items-center gap-2">
+            {active && (
+              <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", item.accentBg, item.accentText)}>
+                当前
+              </span>
+            )}
+            <div className="rounded-full border border-border/70 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-dim">
+              {item.step}
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="mt-4">
-        <div className={cn("text-base font-semibold", active && item.accentText)}>{item.title}</div>
-        <div className="mt-1 text-sm text-dim">{item.headline}</div>
+        <div className="mt-4">
+          <div className={cn("text-base font-semibold", active && item.accentText)}>{item.title}</div>
+          <div className="mt-1 text-sm text-dim">{item.headline}</div>
+        </div>
       </div>
     </button>
   );
