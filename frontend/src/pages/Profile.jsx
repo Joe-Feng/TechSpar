@@ -463,20 +463,135 @@ function HabitTagList({ items }) {
   );
 }
 
-function EvidenceColumn({ title, count, tone, items, renderItem, emptyText }) {
+const EVIDENCE_TYPE_ALL = "all";
+const EVIDENCE_TYPES = [
+  { key: EVIDENCE_TYPE_ALL, label: "全部" },
+  { key: "weak", label: "待改进", tone: "destructive" },
+  { key: "strong", label: "强项", tone: "success" },
+  { key: "improved", label: "已改善", tone: "blue" },
+];
+
+function EvidenceTable({ weakItems, strongItems, improvedItems }) {
+  const [typeFilter, setTypeFilter] = useState(EVIDENCE_TYPE_ALL);
+  const [topicFilter, setTopicFilter] = useState(EVIDENCE_TYPE_ALL);
+  const [expanded, setExpanded] = useState(false);
+  const LIMIT = 8;
+
+  // Build unified list
+  const allItems = [
+    ...weakItems.map((item) => ({ ...item, _type: "weak" })),
+    ...strongItems.map((item) => ({ ...item, _type: "strong" })),
+    ...improvedItems.map((item) => ({ ...item, _type: "improved" })),
+  ];
+
+  // Collect unique topics
+  const topics = [...new Set(allItems.map((item) => item.topic).filter(Boolean))].sort();
+
+  // Filter
+  const filtered = allItems.filter((item) => {
+    if (typeFilter !== EVIDENCE_TYPE_ALL && item._type !== typeFilter) return false;
+    if (topicFilter !== EVIDENCE_TYPE_ALL && item.topic !== topicFilter) return false;
+    return true;
+  });
+
+  const visible = expanded ? filtered : filtered.slice(0, LIMIT);
+  const hasMore = filtered.length > LIMIT;
+
+  const typeCounts = { weak: weakItems.length, strong: strongItems.length, improved: improvedItems.length };
+
+  const dotColor = { weak: "bg-red/80", strong: "bg-green/80", improved: "bg-info/80" };
+
   return (
-    <div>
-      <div className="mb-3 flex items-center gap-2 text-base font-semibold">
-        {title}
-        <Badge variant={tone}>{count}</Badge>
+    <div className="mt-5 space-y-3">
+      {/* Filter chips */}
+      <div className="flex flex-wrap gap-2">
+        {EVIDENCE_TYPES.map(({ key, label, tone }) => {
+          const active = typeFilter === key;
+          const count = key === EVIDENCE_TYPE_ALL ? allItems.length : typeCounts[key];
+          return (
+            <button
+              key={key}
+              onClick={() => { setTypeFilter(key); setExpanded(false); }}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer",
+                active
+                  ? "bg-primary/15 text-primary border border-primary/30"
+                  : "bg-card border border-border text-dim hover:border-primary/20 hover:text-text"
+              )}
+            >
+              {label}
+              <span className={cn("text-[11px]", active ? "text-primary/70" : "text-dim/60")}>{count}</span>
+            </button>
+          );
+        })}
+
+        {topics.length > 1 && (
+          <>
+            <div className="w-px h-6 bg-border self-center mx-1" />
+            {topics.map((topic) => {
+              const active = topicFilter === topic;
+              return (
+                <button
+                  key={topic}
+                  onClick={() => { setTopicFilter(active ? EVIDENCE_TYPE_ALL : topic); setExpanded(false); }}
+                  className={cn(
+                    "px-2.5 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer",
+                    active
+                      ? "bg-accent/15 text-accent border border-accent/30"
+                      : "bg-card border border-border text-dim hover:border-accent/20 hover:text-text"
+                  )}
+                >
+                  {topic}
+                </button>
+              );
+            })}
+          </>
+        )}
       </div>
 
-      {items.length > 0 ? (
-        <CollapsibleList items={items} limit={4} renderItem={renderItem} />
+      {/* Evidence rows */}
+      {filtered.length === 0 ? (
+        <div className="py-6 text-center text-sm text-dim">暂无匹配的证据条目。</div>
       ) : (
-        <Card>
-          <CardContent className="p-4 text-sm text-dim">{emptyText}</CardContent>
-        </Card>
+        <div className="rounded-lg border border-border overflow-hidden">
+          {visible.map((item, i) => (
+            <div
+              key={`${item._type}-${item.point}-${i}`}
+              className={cn(
+                "flex items-center gap-3 px-4 py-3 text-sm",
+                i > 0 && "border-t border-border",
+                item._type === "improved" && "opacity-65"
+              )}
+            >
+              <span className={cn("w-2 h-2 rounded-full shrink-0", dotColor[item._type])} />
+              <span className={cn("flex-1 min-w-0 truncate", item._type === "improved" && "line-through")}>
+                {item.point}
+              </span>
+              {item.topic && (
+                <Badge variant="outline" className="shrink-0 text-[11px]">{item.topic}</Badge>
+              )}
+              {item._type === "weak" && (item.times_seen || 1) > 1 && (
+                <span className="shrink-0 text-xs text-dim">{item.times_seen}次</span>
+              )}
+              <span className="shrink-0 text-xs text-dim w-12 text-right">
+                {formatShortDate(
+                  item._type === "improved"
+                    ? (item.improved_at || item.last_seen || item.first_seen)
+                    : (item.last_seen || item.first_seen)
+                )}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {hasMore && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="text-primary text-[13px] cursor-pointer hover:underline"
+        >
+          {expanded ? "收起" : `展开更多 (+${filtered.length - LIMIT})`}
+        </button>
       )}
     </div>
   );
@@ -863,67 +978,11 @@ export default function Profile() {
           title="证据库"
           caption="原始条目提前到摘要之后，方便你快速核对判断依据。"
         />
-
-        <div className="mt-5 grid gap-4 xl:grid-cols-3">
-          <EvidenceColumn
-            title="待改进"
-            count={weakActive.length}
-            tone="destructive"
-            items={priorityWeaknesses}
-            emptyText="当前没有待改进项。"
-            renderItem={(item, index) => (
-              <Card key={`${item.point}-${index}`}>
-                <CardContent className="flex items-start justify-between gap-3 p-4">
-                  <div className="flex-1">
-                    <div className="text-sm leading-6">{item.point}</div>
-                    <div className="mt-2 text-xs text-dim">{item.reason}</div>
-                  </div>
-                  <div className="shrink-0 flex flex-col items-end gap-2">
-                    {item.topic && <Badge variant="outline">{item.topic}</Badge>}
-                    <span className="text-xs text-dim">{item.times_seen || 1} 次</span>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          />
-
-          <EvidenceColumn
-            title="强项"
-            count={strongPoints.length}
-            tone="success"
-            items={strongPoints}
-            emptyText="还没有记录到强项。"
-            renderItem={(item, index) => (
-              <Card key={`${item.point}-${index}`} className="border-l-[3px] border-l-green">
-                <CardContent className="flex items-start justify-between gap-3 p-4">
-                  <div className="text-sm leading-6">{item.point}</div>
-                  {item.topic && <Badge variant="outline">{item.topic}</Badge>}
-                </CardContent>
-              </Card>
-            )}
-          />
-
-          <EvidenceColumn
-            title="已改善"
-            count={weakImproved.length}
-            tone="success"
-            items={weakImproved}
-            emptyText="还没有闭环改善记录。"
-            renderItem={(item, index) => (
-              <Card key={`${item.point}-${index}`} className="opacity-75">
-                <CardContent className="flex items-start justify-between gap-3 p-4">
-                  <div className="flex-1">
-                    <div className="text-sm leading-6 line-through">{item.point}</div>
-                    <div className="mt-2 text-xs text-dim">
-                      改善时间 {formatShortDate(item.improved_at || item.last_seen || item.first_seen)}
-                    </div>
-                  </div>
-                  <Badge variant="success">已改善</Badge>
-                </CardContent>
-              </Card>
-            )}
-          />
-        </div>
+        <EvidenceTable
+          weakItems={priorityWeaknesses}
+          strongItems={strongPoints}
+          improvedItems={weakImproved}
+        />
       </CardContent>
     </Card>
   );
