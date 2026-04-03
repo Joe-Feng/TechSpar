@@ -449,7 +449,10 @@
   .landing-motion .loop-shell,
   .landing-motion .loop-beam,
   .landing-motion .loop-node-body,
-  .landing-motion .detail-panel-enter {
+  .landing-motion .detail-panel-enter,
+  .landing-motion .hero-gradient-text,
+  .landing-motion .loop-shell::before,
+  .landing-motion .loop-module-tag {
     animation: none !important;
   }
 
@@ -471,6 +474,81 @@
 .stagger-children > *:nth-child(4) { animation-delay: 0.2s; }
 .stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
 .stagger-children > *:nth-child(6) { animation-delay: 0.3s; }
+
+/* ── Hero gradient text shimmer sweep ── */
+.hero-gradient-text {
+  position: relative;
+  background-size: 200% auto;
+  animation: gradient-shimmer 4s ease-in-out infinite;
+}
+
+@keyframes gradient-shimmer {
+  0%, 100% { background-position: 0% center; }
+  50% { background-position: 100% center; }
+}
+
+/* ── Magnetic hover effect on CTA buttons ── */
+.landing-motion button.bg-gradient-to-r,
+.landing-motion button.border {
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.28s ease,
+    filter 0.28s ease;
+}
+
+.landing-motion button.bg-gradient-to-r:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow:
+    0 14px 40px rgba(245, 158, 11, 0.25),
+    0 0 0 1px rgba(245, 158, 11, 0.15);
+  filter: brightness(1.08);
+}
+
+.landing-motion section button.border:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 12px 36px rgba(15, 23, 42, 0.1);
+}
+
+/* ── Orbital center pulse ring ── */
+.loop-shell::before {
+  content: "";
+  position: absolute;
+  inset: -12px;
+  border-radius: 36px;
+  border: 1.5px solid rgba(245, 158, 11, 0.12);
+  animation: orbital-ring-pulse 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes orbital-ring-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.06); opacity: 0.85; }
+}
+
+/* ── Subtle border glow on loop module icon hover ── */
+.loop-module-card:hover .loop-module-icon {
+  animation: icon-breathe 1.6s ease-in-out infinite;
+}
+
+@keyframes icon-breathe {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  50% { box-shadow: 0 0 22px color-mix(in srgb, var(--loop-glow, rgba(245, 158, 11, 0.14)) 60%, transparent); }
+}
+
+/* ── Stagger writeback tags on reveal ── */
+.scroll-reveal[data-revealed] .loop-module-tag {
+  animation: tag-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+.scroll-reveal[data-revealed] .loop-module-tag:nth-child(1) { animation-delay: 0.6s; }
+.scroll-reveal[data-revealed] .loop-module-tag:nth-child(2) { animation-delay: 0.72s; }
+.scroll-reveal[data-revealed] .loop-module-tag:nth-child(3) { animation-delay: 0.84s; }
+
+@keyframes tag-pop {
+  from { opacity: 0; transform: translateY(8px) scale(0.85); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }

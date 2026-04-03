@@ -13,7 +13,7 @@ import {
   Sparkles,
   FileText,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import useScrollReveal from "@/hooks/useScrollReveal";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -218,6 +218,117 @@ const MEMORY_SIGNALS = [
 
 const revealStyle = (delay) => ({ "--reveal-delay": `${delay}s` });
 
+/* ── Mouse-tracking parallax for ambient orbs ── */
+function useMouseParallax(strength = 0.02) {
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    if (reduced) return;
+
+    let raf;
+    const onMove = (e) => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
+        setOffset({
+          x: (e.clientX - cx) * strength,
+          y: (e.clientY - cy) * strength,
+        });
+      });
+    };
+    window.addEventListener("mousemove", onMove, { passive: true });
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      cancelAnimationFrame(raf);
+    };
+  }, [strength]);
+
+  return offset;
+}
+
+/* ── Animated stat counter ── */
+function AnimatedCounter({ value, className }) {
+  const ref = useRef(null);
+  const [display, setDisplay] = useState(value);
+  const hasAnimated = useRef(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !hasAnimated.current) {
+          hasAnimated.current = true;
+          observer.unobserve(el);
+
+          const numeric = parseFloat(value);
+          const suffix = value.replace(/[\d.]/g, "");
+          const isDecimal = value.includes(".");
+          const duration = 1200;
+          const start = performance.now();
+
+          const tick = (now) => {
+            const elapsed = now - start;
+            const progress = Math.min(elapsed / duration, 1);
+            // Ease-out cubic
+            const eased = 1 - Math.pow(1 - progress, 3);
+            const current = numeric * eased;
+            setDisplay(
+              (isDecimal ? current.toFixed(1) : Math.round(current)) + suffix
+            );
+            if (progress < 1) requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        }
+      },
+      { threshold: 0.3 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [value]);
+
+  return (
+    <span ref={ref} className={className}>
+      {display}
+    </span>
+  );
+}
+
+/* ── Typing effect for detail panel preview lines ── */
+function TypedLine({ text, delay = 0 }) {
+  const [displayed, setDisplayed] = useState("");
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setStarted(true), delay);
+    return () => clearTimeout(t);
+  }, [delay]);
+
+  useEffect(() => {
+    if (!started) { setDisplayed(""); return; }
+    let i = 0;
+    const interval = setInterval(() => {
+      i++;
+      setDisplayed(text.slice(0, i));
+      if (i >= text.length) clearInterval(interval);
+    }, 22);
+    return () => clearInterval(interval);
+  }, [text, started]);
+
+  return (
+    <span className="text-dim">
+      {displayed}
+      {displayed.length < text.length && (
+        <span className="inline-block w-[2px] h-[14px] bg-primary/60 align-middle ml-0.5 animate-pulse" />
+      )}
+    </span>
+  );
+}
+
 export default function Landing() {
   const navigate = useNavigate();
   const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "dark");
@@ -230,6 +341,7 @@ export default function Landing() {
   const loopRef = useScrollReveal();
   const memoryRef = useScrollReveal();
   const ctaRef = useScrollReveal();
+  const parallax = useMouseParallax(0.018);
 
   const scrollToLoop = () => {
     document.getElementById("loop")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -262,8 +374,14 @@ export default function Landing() {
 
       <main className="relative z-10">
         <section className="overflow-hidden px-6 pb-16 pt-12 md:px-10 md:pb-24 md:pt-16">
-          <div className="ambient-orb absolute left-[8%] top-24 h-56 w-56 rounded-full bg-primary/10 blur-3xl pointer-events-none animate-drift-slow" />
-          <div className="ambient-orb absolute right-[10%] top-36 h-64 w-64 rounded-full bg-teal/10 blur-3xl pointer-events-none animate-drift-reverse" />
+          <div
+            className="ambient-orb absolute left-[8%] top-24 h-56 w-56 rounded-full bg-primary/10 blur-3xl pointer-events-none animate-drift-slow"
+            style={{ transform: `translate3d(${parallax.x * 1.2}px, ${parallax.y * 1.2}px, 0)` }}
+          />
+          <div
+            className="ambient-orb absolute right-[10%] top-36 h-64 w-64 rounded-full bg-teal/10 blur-3xl pointer-events-none animate-drift-reverse"
+            style={{ transform: `translate3d(${parallax.x * -0.8}px, ${parallax.y * -0.8}px, 0)` }}
+          />
 
           <div className="mx-auto max-w-7xl">
             <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(350px,430px)] lg:items-start lg:gap-8 xl:grid-cols-[minmax(0,1.02fr)_minmax(380px,450px)] xl:gap-10">
@@ -275,7 +393,7 @@ export default function Landing() {
 
                 <h1 className="mt-6 text-4xl font-display font-bold leading-tight tracking-tight md:text-6xl md:leading-[1.04] animate-fade-in-up">
                   把技术面试做成
-                  <span className="mt-2 block bg-gradient-to-r from-accent-light via-accent to-orange bg-clip-text text-transparent">
+                  <span className="hero-gradient-text mt-2 block bg-gradient-to-r from-accent-light via-accent to-orange bg-clip-text text-transparent">
                     一条持续进化的闭环
                   </span>
                 </h1>
@@ -341,9 +459,10 @@ export default function Landing() {
                             </div>
                             <div className="min-w-0">
                               <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-                                <span className={cn("text-4xl font-display font-bold tracking-tight leading-none", item.statClass)}>
-                                  {item.stat}
-                                </span>
+                                <AnimatedCounter
+                                  value={item.stat}
+                                  className={cn("text-4xl font-display font-bold tracking-tight leading-none", item.statClass)}
+                                />
                                 <span className="text-lg font-semibold leading-tight">{item.title}</span>
                               </div>
                               <p className="mt-2 text-sm leading-7 text-dim">{item.desc}</p>
@@ -807,7 +926,7 @@ function DetailPanel({ module, compact = false }) {
               <div key={line.label}>
                 <span className={cn("font-medium", line.tone)}>{line.label}</span>
                 <span className="text-dim"> &gt; </span>
-                <span className="text-dim">{line.text}</span>
+                <TypedLine text={line.text} delay={module.preview.indexOf(line) * 600} />
               </div>
             ))}
           </div>
