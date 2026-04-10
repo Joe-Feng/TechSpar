@@ -54,8 +54,44 @@ app.add_middleware(
 
 router = APIRouter(prefix="/api")
 
-# In-memory graph instances keyed by session_id (resume mode only)
+# In-memory graph instances keyed by session_id (resume mode only).
+# Hot cache only — authoritative state lives in the SqliteSaver checkpoint DB,
+# so a cache miss falls through to _get_or_restore_resume_graph().
 _graphs: dict[str, dict] = {}
+
+
+def _get_or_restore_resume_graph(session_id: str, user_id: str) -> dict | None:
+    """Return the cached graph entry, or rebuild it from the SqliteSaver checkpoint.
+
+    Returns None if the session does not exist, belongs to another user,
+    or has no recoverable LangGraph state on disk (e.g. created before
+    persistence was enabled). Callers should translate None into a 404.
+    """
+    entry = _graphs.get(session_id)
+    if entry is not None:
+        return entry if entry.get("user_id") == user_id else None
+
+    # Cache miss — try to rehydrate from sessions table + on-disk checkpoint
+    session = get_session(session_id, user_id=user_id)
+    if not session or session.get("mode") != InterviewMode.RESUME.value:
+        return None
+
+    graph = compile_resume_interview(user_id)
+    config = {"configurable": {"thread_id": session_id}}
+
+    # The session row may exist while the LangGraph checkpoint does not
+    # (e.g. legacy sessions started under MemorySaver). Treat that as 404.
+    state = graph.get_state(config)
+    if not state.values:
+        return None
+
+    entry = {
+        "graph": graph, "config": config,
+        "mode": InterviewMode.RESUME, "topic": session.get("topic"),
+        "user_id": user_id,
+    }
+    _graphs[session_id] = entry
+    return entry
 # Drill session data (questions stored for evaluation at end)
 _drill_sessions: dict[str, dict] = {}
 # JD prep session data (questions + preview stored for evaluation at end)
@@ -840,12 +876,9 @@ def start_interview(req: StartInterviewRequest, user_id: str = Depends(get_curre
 @router.post("/interview/chat")
 def chat(req: ChatRequest, user_id: str = Depends(get_current_user)):
     """Send user answer, get next interviewer response (resume mode only)."""
-    if req.session_id not in _graphs:
-        raise HTTPException(404, "Session not found. It may have expired (in-memory only).")
-
-    entry = _graphs[req.session_id]
-    if entry.get("user_id") != user_id:
-        raise HTTPException(403, "Access denied.")
+    entry = _get_or_restore_resume_graph(req.session_id, user_id)
+    if entry is None:
+        raise HTTPException(404, "Session not found or no recoverable state.")
 
     graph = entry["graph"]
     config = entry["config"]
@@ -890,12 +923,9 @@ _EVAL_TAG_SUFFIX = "-->"
 @router.post("/interview/chat/stream")
 async def chat_stream(req: ChatRequest, user_id: str = Depends(get_current_user)):
     """SSE streaming version of /interview/chat."""
-    if req.session_id not in _graphs:
-        raise HTTPException(404, "Session not found.")
-
-    entry = _graphs[req.session_id]
-    if entry.get("user_id") != user_id:
-        raise HTTPException(403, "Access denied.")
+    entry = _get_or_restore_resume_graph(req.session_id, user_id)
+    if entry is None:
+        raise HTTPException(404, "Session not found or no recoverable state.")
 
     graph = entry["graph"]
     config = entry["config"]
