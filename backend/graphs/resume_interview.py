@@ -10,7 +10,7 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 
 from backend.models import ResumeInterviewState, InterviewPhase
 from backend.config import settings
-from backend.llm_provider import get_langchain_llm
+from backend.llm_provider import compat_chat_completion
 from backend.indexer import query_resume
 from backend.memory import get_profile_summary
 from backend.prompts.interviewer import RESUME_INTERVIEWER_SYSTEM
@@ -63,6 +63,20 @@ def _parse_inline_eval(content: str) -> tuple[str, dict | None]:
         return clean, None
 
 
+def _fallback_opening() -> str:
+    return "你好，欢迎参加这次简历模拟面试。先请你做一个简短的自我介绍，重点讲讲你最近做过的项目、负责的内容，以及你最擅长的技术方向。"
+
+
+def _fallback_question(phase: str) -> str:
+    if phase == InterviewPhase.SELF_INTRO.value:
+        return "你刚才的自我介绍里提到了几个重点经历。先展开讲讲你最近一段最有代表性的项目，你在里面具体负责什么？"
+    if phase == InterviewPhase.PROJECT_DEEP_DIVE.value:
+        return "我们继续深入一个你最熟悉的项目。挑一个你参与度最高的，说说当时最难的问题是什么，你是怎么解决的？"
+    if phase == InterviewPhase.REVERSE_QA.value:
+        return "今天的交流差不多到这里了。最后如果你有想反问我的问题，现在可以提出来。"
+    return "我们继续往下聊。结合你刚才提到的经历，你觉得最能体现你技术判断力的一个实际场景是什么？"
+
+
 def _make_init_interview(user_id: str):
     """Create init_interview node bound to a specific user."""
     def init_interview(state: ResumeInterviewState) -> dict:
@@ -76,11 +90,14 @@ def _make_init_interview(user_id: str):
             user_profile=get_profile_summary(user_id),
         )
 
-        llm = get_langchain_llm()
-        response = llm.invoke([
-            SystemMessage(content=system_prompt),
-            HumanMessage(content="面试开始，请开场并让候选人做自我介绍。"),
-        ])
+        content = compat_chat_completion([
+                SystemMessage(content=system_prompt),
+                HumanMessage(content="面试开始，请开场并让候选人做自我介绍。"),
+            ]).strip()
+        if not content:
+            logger.warning("Compat client returned empty opening, using fallback opener.")
+            content = _fallback_opening()
+        response = AIMessage(content=content)
 
         return {
             "messages": [response],
@@ -108,9 +125,12 @@ def _make_interviewer_ask(user_id: str):
             user_profile=get_profile_summary(user_id),
         )
 
-        llm = get_langchain_llm()
         messages = [SystemMessage(content=system_prompt)] + list(state.get("messages", []))
-        response = llm.invoke(messages)
+        content = compat_chat_completion(messages).strip()
+        if not content:
+            logger.warning("Compat client returned empty interviewer turn for phase=%s, using fallback.", state.get("phase", ""))
+            content = _fallback_question(state.get("phase", "technical"))
+        response = AIMessage(content=content)
 
         # Parse and strip inline eval from response
         clean_content, eval_data = _parse_inline_eval(response.content)

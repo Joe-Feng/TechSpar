@@ -1,5 +1,6 @@
 """LlamaIndex indexing for resume and interview knowledge base."""
 import json
+import logging
 from pathlib import Path
 
 from llama_index.core import (
@@ -11,10 +12,11 @@ from llama_index.core import (
 )
 
 from backend.config import settings
-from backend.llm_provider import get_llama_llm, get_embedding
+from backend.llm_provider import compat_chat_completion, get_llama_llm, get_embedding
 
 # In-memory index cache keyed by (user_id, topic_or_resume)
 _index_cache: dict[tuple[str, str], "VectorStoreIndex"] = {}
+logger = logging.getLogger("uvicorn")
 
 
 def load_topics(user_id: str) -> dict:
@@ -74,6 +76,23 @@ def build_resume_index(user_id: str, force_rebuild: bool = False) -> VectorStore
     return index
 
 
+def retrieve_resume_context(question: str, user_id: str, top_k: int = 3) -> list[str]:
+    """Retrieve raw resume text chunks without invoking the LLM."""
+    index = build_resume_index(user_id)
+    retriever = index.as_retriever(similarity_top_k=top_k)
+    nodes = retriever.retrieve(question)
+
+    chunks: list[str] = []
+    seen: set[str] = set()
+    for node in nodes:
+        text = node.get_content().strip()
+        if not text or text in seen:
+            continue
+        seen.add(text)
+        chunks.append(text)
+    return chunks
+
+
 def build_topic_index(topic: str, user_id: str, force_rebuild: bool = False) -> VectorStoreIndex:
     """Build or load index for a specific knowledge topic."""
     cache_key = (user_id, topic)
@@ -115,11 +134,32 @@ def build_topic_index(topic: str, user_id: str, force_rebuild: bool = False) -> 
 
 
 def query_resume(question: str, user_id: str, top_k: int = 3) -> str:
-    """Query the resume index."""
-    index = build_resume_index(user_id)
-    engine = index.as_query_engine(similarity_top_k=top_k)
-    response = engine.query(question)
-    return str(response)
+    """Query the resume index via retrieval + compatibility LLM summary."""
+    chunks = retrieve_resume_context(question, user_id, top_k=top_k)
+    if not chunks:
+        return "未检索到可用简历信息。"
+
+    snippet = "\n\n".join(f"[片段{i + 1}]\n{chunk}" for i, chunk in enumerate(chunks))
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "你将收到候选人的简历检索片段。"
+                "只基于这些片段回答，不要编造。"
+                "请提炼与问题最相关的项目经历、技能和教育背景。"
+                "如果教育背景缺失，明确说明“未提供教育背景信息”。"
+            ),
+        },
+        {
+            "role": "user",
+            "content": f"问题：{question}\n\n简历片段：\n{snippet}",
+        },
+    ]
+    try:
+        return compat_chat_completion(messages)
+    except Exception as exc:
+        logger.warning("Resume summary via compat client failed, falling back to raw context: %s", exc)
+        return "\n\n".join(chunks)[:5000]
 
 
 def query_topic(topic: str, question: str, user_id: str, top_k: int = 5) -> str:
