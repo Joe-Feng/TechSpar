@@ -51,6 +51,47 @@ _EVAL_TAG_PREFIX = "<!--EVAL:"
 _EVAL_TAG_SUFFIX = "-->"
 
 
+def _extract_ai_message(result) -> str:
+    if not isinstance(result, dict):
+        return ""
+
+    for msg in reversed(result.get("messages", [])):
+        if isinstance(msg, AIMessage):
+            return msg.content
+    return ""
+
+
+def _run_resume_turn(entry, session_id: str, user_id: str, message: str) -> dict:
+    graph = entry["graph"]
+    config = entry["config"]
+    state = graph.get_state(config)
+    if not state.next:
+        return {"message": "", "is_finished": True}
+
+    graph.update_state(config, {"messages": [HumanMessage(content=message)]})
+    result = graph.invoke(None, config)
+
+    is_finished = False
+    if isinstance(result, dict):
+        is_finished = result.get("is_finished", False)
+        phase = result.get("phase", "")
+        if phase in (InterviewPhase.END.value, "end"):
+            is_finished = True
+
+    ai_message = _extract_ai_message(result)
+    append_message(session_id, "user", message, user_id=user_id)
+    append_message(session_id, "assistant", ai_message, user_id=user_id)
+    return {"message": ai_message, "is_finished": is_finished}
+
+
+def _iter_sse_text_chunks(text: str, chunk_size: int = 24):
+    if not text:
+        return
+
+    for start in range(0, len(text), chunk_size):
+        yield text[start : start + chunk_size]
+
+
 @router.post("/job-prep/preview")
 def job_prep_preview(req: JobPrepPreviewRequest, user_id: str = Depends(get_current_user)):
     """Analyze a JD and candidate fit before starting targeted practice."""
@@ -208,35 +249,8 @@ def chat(req: ChatRequest, user_id: str = Depends(get_current_user)):
     if entry is None:
         raise HTTPException(404, "Session not found or no recoverable state.")
 
-    graph = entry["graph"]
-    config = entry["config"]
-    state = graph.get_state(config)
-    if not state.next:
-        return {"session_id": req.session_id, "message": "", "is_finished": True}
-
-    graph.update_state(config, {"messages": [HumanMessage(content=req.message)]})
-    result = graph.invoke(None, config)
-    append_message(req.session_id, "user", req.message, user_id=user_id)
-
-    is_finished = False
-    if isinstance(result, dict):
-        is_finished = result.get("is_finished", False)
-        phase = result.get("phase", "")
-        if phase in (InterviewPhase.END.value, "end"):
-            is_finished = True
-
-    ai_message = ""
-    for msg in reversed(result["messages"]):
-        if isinstance(msg, AIMessage):
-            ai_message = msg.content
-            break
-
-    append_message(req.session_id, "assistant", ai_message, user_id=user_id)
-    return {
-        "session_id": req.session_id,
-        "message": ai_message,
-        "is_finished": is_finished,
-    }
+    turn = _run_resume_turn(entry, req.session_id, user_id, req.message)
+    return {"session_id": req.session_id, **turn}
 
 
 @router.post("/interview/chat/stream")
@@ -246,65 +260,18 @@ async def chat_stream(req: ChatRequest, user_id: str = Depends(get_current_user)
     if entry is None:
         raise HTTPException(404, "Session not found or no recoverable state.")
 
-    graph = entry["graph"]
-    config = entry["config"]
-    state = graph.get_state(config)
-    if not state.next:
-        async def finished_gen():
-            yield f"data: {json.dumps({'done': True, 'is_finished': True})}\n\n"
-
-        return StreamingResponse(finished_gen(), media_type="text/event-stream")
-
-    graph.update_state(config, {"messages": [HumanMessage(content=req.message)]})
-    append_message(req.session_id, "user", req.message, user_id=user_id)
-
     async def event_generator():
-        full_text = ""
-        pending = ""
-
         try:
-            async for event in graph.astream_events(None, config, version="v2"):
-                if event["event"] != "on_chat_model_stream":
-                    continue
-                chunk = event["data"].get("chunk")
-                if not chunk or not hasattr(chunk, "content") or not chunk.content:
-                    continue
-
-                token = chunk.content
-                pending += token
-
-                if _EVAL_TAG_PREFIX in pending:
-                    start = pending.index(_EVAL_TAG_PREFIX)
-                    if _EVAL_TAG_SUFFIX in pending[start:]:
-                        before = pending[:start]
-                        if before:
-                            full_text += before
-                            yield f"data: {json.dumps({'token': before})}\n\n"
-                        pending = ""
-                elif pending.endswith(("<", "<!", "<!-", "<!--", "<!--E", "<!--EV", "<!--EVA", "<!--EVAL", "<!--EVAL:")):
-                    pass
-                else:
-                    full_text += pending
-                    yield f"data: {json.dumps({'token': pending})}\n\n"
-                    pending = ""
-
-            if pending and _EVAL_TAG_PREFIX not in pending:
-                full_text += pending
-                yield f"data: {json.dumps({'token': pending})}\n\n"
+            turn = _run_resume_turn(entry, req.session_id, user_id, req.message)
         except Exception as exc:
             yield f"data: {json.dumps({'error': str(exc)})}\n\n"
             return
 
-        final_state = graph.get_state(config)
-        is_finished = False
-        if isinstance(final_state.values, dict):
-            is_finished = final_state.values.get("is_finished", False)
-            phase = final_state.values.get("phase", "")
-            if phase in (InterviewPhase.END.value, "end"):
-                is_finished = True
+        for chunk in _iter_sse_text_chunks(turn["message"]):
+            yield f"data: {json.dumps({'token': chunk})}\n\n"
+            await asyncio.sleep(0)
 
-        append_message(req.session_id, "assistant", full_text, user_id=user_id)
-        yield f"data: {json.dumps({'done': True, 'is_finished': is_finished})}\n\n"
+        yield f"data: {json.dumps({'done': True, 'is_finished': turn['is_finished']})}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
